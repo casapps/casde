@@ -7,6 +7,8 @@ take all of the features from all of the desktop environment(deduplicated).
 full custom keybinding supported and global hotkeys while supporting focused app specific.
 compositor should support everything a user would expect such as things like wobblh windows, etc.
 builtin screenshot utility, full clipboard support, everything an user expects from a feature rich desktop environment.
+builin app menu, taskbar, app bar, all plugins builtin(xfce4, xmonad, awesome, etc) as we will n9t support plugins.
+full support for pipewire, pulseaudio, etc.
 install the session file for the switching via the login manager.
 will need further discussion and research.
 
