@@ -381,6 +381,42 @@ this includes:
   panel, compositor accents, and GTK app theming together, replacing
   XFCE4's split across `xfwm4.xml` theme, `xsettings.xml` `ThemeName`, and
   GTK config files.
+- **Bundled theme set** — 25 dark + 25 light themes ship built in,
+  curated from widely-recognized community palettes (e.g. Nord,
+  Dracula, Gruvbox, Solarized, Catppuccin, One Dark/Light, Everforest,
+  Tokyo Night, Arc, Adwaita), each a visually distinct palette rather
+  than accent-color variants of one base. Every bundled theme covers
+  all of: GTK3/4, Qt5/6, window decorations, and panel accent — full
+  unified coverage per theme, not a GTK-only subset. `Arc-Pink-Dark`
+  (above) is one of the 25 dark entries, kept as the out-of-the-box
+  default.
+- **System theme exposure — no third-party dependency.** CASDE
+  implements the theming/dark-light mechanism itself rather than
+  depending on `lxappearance`, `xfce4-settings`, or GTK's own daemon,
+  while still adhering to the XDG standards apps actually expect:
+  - **`xdg-desktop-portal` Settings namespace**
+    (`org.freedesktop.appearance`, `color-scheme`: no-preference /
+    prefer-dark / prefer-light) — CASDE's session provides this as a
+    native `org.freedesktop.impl.portal.Settings` D-Bus service (CASDE
+    is the desktop, so it's the *provider* of this portal interface,
+    not a consumer), covering GTK4/Qt6/Electron/Flatpak apps that query
+    it directly. Applies on both backends.
+  - **XSETTINGS protocol (X11)** — CASDE runs its own XSETTINGS manager
+    (replacing `xfsettingsd`/`xsettingsd`), publishing `Net/ThemeName`,
+    `Gtk/ColorScheme`, and `Xft/*` font/DPI settings for GTK2/GTK3/Qt5
+    apps on X11 that read this channel instead of the portal.
+  - **Generated legacy config files** — CASDE writes
+    `~/.config/gtk-3.0/settings.ini`, `~/.config/gtk-4.0/settings.ini`,
+    and a Qt platform-theme config (`qt5ct`/`qt6ct`-compatible ini, with
+    `QT_QPA_PLATFORMTHEME` set appropriately) from the active CASDE
+    theme, so apps that only read files on startup (not live-updating
+    via portal or XSETTINGS) still honor the current theme and
+    dark/light mode on next launch.
+  - Net effect: one CASDE theme/mode toggle fans out to all three
+    channels automatically; apps that support any of the three honor
+    it, apps that don't just keep their own default — CASDE never
+    forces theming onto an app that doesn't opt in, matching how these
+    standards are meant to work.
 - **Icon themes** — from `iconmgr`, two themes surveyed:
   - **N.I.B.** (default, matches the XFCE4 baseline's
     `xsettings.xml` `IconThemeName`) — ~1,382 scalable/symbolic SVG
