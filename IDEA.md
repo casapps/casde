@@ -353,6 +353,17 @@ this includes:
 - Installs a session file so display/login managers (LightDM, GDM, SDDM,
   etc.) can offer CASDE as a selectable session, for both the X11 and
   Wayland backends.
+- **Keyring / secret storage** — built in natively rather than depending
+  on `gnome-keyring` or `kwalletd`, since package availability for
+  either varies significantly across distros/platforms (some minimal
+  installs and BSD packaging lack both). CASDE implements the
+  freedesktop **Secret Service API** (`org.freedesktop.secrets` D-Bus
+  interface) itself, so `libsecret`-using apps (browsers, NetworkManager,
+  email/IMAP clients, SSH/GPG agents) work unmodified with zero app-side
+  changes. Encrypted at rest with a key derived from the user's login
+  password, auto-unlocking at login via PAM integration — no separate
+  keyring prompt for the common case, matching GNOME Keyring's default
+  behavior without depending on the GNOME Keyring package itself.
 
 ### Trust boundaries & security exceptions
 - **Deliberate exception**: apps get direct access to request a
