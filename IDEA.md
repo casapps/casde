@@ -347,7 +347,28 @@ this includes:
   persistence and from history display.
 - Full PipeWire support and full PulseAudio support (both audio backends,
   not PipeWire-only with a Pulse shim assumed away).
-- Notification daemon built in (replacing `xfce4-notifyd`/`dunst`).
+- Notification daemon built in (replacing `xfce4-notifyd`/`dunst`),
+  implementing the freedesktop **Desktop Notification Specification**
+  (`org.freedesktop.Notifications` D-Bus interface) in full — this is
+  the actual interface every `libnotify`-using app already calls, so
+  existing programs send notifications with zero app-side changes.
+- **`xdg-desktop-portal` implemented as a compat provider, not skipped**
+  — CASDE ships its own `org.freedesktop.impl.portal.*` backend
+  (Screenshot, Clipboard, ScreenCast, GlobalShortcuts, Settings) rather
+  than omitting portal support, for two reasons that both matter
+  independent of the trust-boundary decision below:
+  - **Sandboxed apps (Flatpak) have no other route to the screen or
+    clipboard at all** — the sandbox blocks direct X11/Wayland access
+    by design, so without a portal backend these apps simply can't
+    screenshot, read/write clipboard, or register shortcuts, period.
+  - **Wayland screen-sharing/recording has no direct protocol for any
+    app, sandboxed or not** — `ScreenCast` is the only way Zoom,
+    Discord, browser tab-share, and OBS capture a Wayland screen at
+    all. Skipping this portal would mean screen-sharing simply doesn't
+    work on CASDE's Wayland backend for anyone.
+  - See **Trust boundaries** below for how consent is handled — the
+    portal *interfaces* are fully implemented; what CASDE changes is
+    the consent-prompt behavior, not whether the interface exists.
 - Session management: login/logout/lock/suspend/reboot/shutdown actions
   built into the panel, matching `xfce4-session`.
 - Installs a session file so display/login managers (LightDM, GDM, SDDM,
@@ -373,17 +394,26 @@ this includes:
   behavior without depending on the GNOME Keyring package itself.
 
 ### Trust boundaries & security exceptions
-- **Deliberate exception**: apps get direct access to request a
-  screenshot/screen-recording capture, read the clipboard, and register
-  global shortcuts — CASDE does **not** implement `xdg-desktop-portal`
-  gating (no per-request user consent prompt) for these. This is a known
-  divergence from the modern Wayland security model (GNOME/KDE both gate
-  these behind portals with consent dialogs). Reasoning: direct control
-  without depending on external portal tooling, at the accepted cost that
-  a malicious or buggy app can screenshot the desktop, read clipboard
-  contents, or steal a global shortcut without the user being asked.
-  Mitigations to revisit later if this proves too permissive: per-app
-  allow/deny lists in the settings UI, or an opt-in portal mode.
+- **Deliberate exception, reconciled with portal compat**: the portal
+  *interfaces* (Screenshot, Clipboard, ScreenCast, GlobalShortcuts) are
+  fully implemented (see System integration) so every app — sandboxed
+  or not — has a working, spec-compliant path to the screen, clipboard,
+  and shortcuts. What CASDE changes from the GNOME/KDE model is the
+  **consent behavior**, not the interface's existence: CASDE's portal
+  backend **auto-approves** these requests instead of showing a
+  per-request consent dialog. Non-sandboxed apps also retain direct
+  access outside the portal (X11/Wayland-native calls) as before. This
+  is still a known divergence from the modern Wayland security model
+  (GNOME/KDE gate these behind interactive consent dialogs) — the
+  accepted cost is the same as previously decided: a malicious or buggy
+  app can screenshot the desktop, read clipboard contents, capture the
+  screen, or steal a global shortcut without the user being asked, since
+  the portal never actually prompts. Reasoning: direct, frictionless
+  access without depending on interactive consent flows, while still
+  being fully standards-compliant for apps (including sandboxed ones)
+  that only know how to ask via the portal. Mitigations to revisit later
+  if this proves too permissive: per-app allow/deny lists in the
+  settings UI, or a per-app/per-portal opt-in consent mode.
 
 ### Theming
 - Default theme ported from the XFCE4 baseline: `Arc-Pink-Dark` (dark
