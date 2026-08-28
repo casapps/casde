@@ -357,11 +357,18 @@ this includes:
   on `gnome-keyring` or `kwalletd`, since package availability for
   either varies significantly across distros/platforms (some minimal
   installs and BSD packaging lack both). CASDE implements the
-  freedesktop **Secret Service API** (`org.freedesktop.secrets` D-Bus
-  interface) itself, so `libsecret`-using apps (browsers, NetworkManager,
-  email/IMAP clients, SSH/GPG agents) work unmodified with zero app-side
-  changes. Encrypted at rest with a key derived from the user's login
-  password, auto-unlocking at login via PAM integration — no separate
+  freedesktop **Secret Service API spec in full** (the
+  `org.freedesktop.Secret.Service`/`.Collection`/`.Item` D-Bus
+  interfaces under the `org.freedesktop.secrets` bus name) — not a
+  partial/best-effort subset — so this is a **compatibility layer for
+  existing programs**: any app that talks to `libsecret` (VSCode's
+  built-in secret storage, Chrome/Chromium, most Electron apps via
+  `keytar`, browsers' saved-password stores, NetworkManager's saved
+  wifi/VPN credentials, email/IMAP clients, SSH/GPG agents) works
+  against CASDE's keyring with zero app-side changes — the app has no
+  way to tell it isn't talking to GNOME Keyring or KWallet. Encrypted at
+  rest with a key derived from the user's login password, auto-unlocking
+  at login via PAM integration — no separate
   keyring prompt for the common case, matching GNOME Keyring's default
   behavior without depending on the GNOME Keyring package itself.
 
