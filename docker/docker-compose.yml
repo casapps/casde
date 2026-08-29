@@ -1,0 +1,24 @@
+name: casde
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  casde:
+    image: ghcr.io/casapps/casde:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      DISPLAY: ${DISPLAY:-}
+      WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XDG_RUNTIME_DIR:-/tmp}:/tmp/xdg
+      - ~/.config/casapps/casde:/root/.config/casapps/casde
+    devices:
+      - /dev/dri
+    logging: *default-logging

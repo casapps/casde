@@ -1,0 +1,18 @@
+# Third-Party Crate Attributions
+
+{{#each overview}}
+- **{{this.name}}** ({{this.count}} version{{#if (gt this.count 1)}}s{{/if}}) — {{this.id}}
+{{/each}}
+
+{{#each licenses}}
+## {{this.name}}
+
+{{#each this.used_by}}
+### {{this.crate.name}} {{this.crate.version}}
+{{/each}}
+
+```text
+{{{this.text}}}
+```
+
+{{/each}}

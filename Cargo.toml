@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members  = [".", "xtask"]
+
+[package]
+name        = "casde"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.85"
+license     = "MIT"
+authors     = ["casjay <git-admin@casjaysdev.pro>"]
+repository  = "https://github.com/casapps/casde"
+homepage    = "https://github.com/casapps/casde"
+description = "CASDE — a full, single-binary desktop environment for Linux (Wayland + X11)."
+
+[[bin]]
+name = "casde"
+path = "src/main.rs"
+
+[dependencies]
+clap    = { version = "4", features = ["derive"] }
+thiserror = "2"
+anyhow  = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde   = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+chrono  = "0.4"
+rust-embed = "8"
+
+[profile.release]
+opt-level     = "z"
+lto           = true
+codegen-units = 1
+strip         = true
+panic         = "abort"

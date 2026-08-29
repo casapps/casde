@@ -1,0 +1,33 @@
+# .dockerignore created on 08/29/26 at 18:11
+
+# version control
+.git/
+.gitignore
+.gitattributes
+
+# local and secret config
+.env
+app.env
+default.env
+.claude/
+
+# build artifacts
+binaries/
+releases/
+
+# runtime volume data (never in image)
+volumes/
+docker/volumes/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# docs and meta (not needed in image) — LICENSE.md is the exception: it is
+# embedded at compile time via include_str! (AI.md PART 11 -> "User-Visible
+# Attribution Surface"), so it must stay in the build context.
+*.md
+!LICENSE.md
+
+# Rust build cache (rebuilt inside container)
+target/

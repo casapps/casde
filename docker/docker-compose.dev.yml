@@ -1,0 +1,50 @@
+name: casde
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  # Toolchain shell for cargo fmt/clippy/test/build (AI.md PART 5 -> "Cargo Commands").
+  # Usage: docker compose -f docker/docker-compose.dev.yml run --rm dev cargo test
+  dev:
+    image: casjaysdev/rust:latest
+    working_dir: /work
+    environment:
+      GOFLAGS: -buildvcs=false
+      RUST_LOG: debug
+    volumes:
+      - ${PWD}:/work
+      - casde-cargo-registry:/usr/local/cargo/registry
+      - casde-target:/work/target
+    logging: *default-logging
+
+  # GUI smoke-test shell with X11/Wayland forwarding (AI.md PART 5 -> "X11
+  # and Wayland Forwarding"). Usage:
+  #   docker compose -f docker/docker-compose.dev.yml run --rm gui cargo run -- --ui gui
+  gui:
+    image: casjaysdev/rust:latest
+    working_dir: /work
+    environment:
+      GOFLAGS: -buildvcs=false
+      DISPLAY: ${DISPLAY:-}
+      WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-}
+      XDG_RUNTIME_DIR: /tmp/xdg
+      QT_QPA_PLATFORM: wayland
+      GDK_BACKEND: wayland
+    volumes:
+      - ${PWD}:/work
+      - casde-cargo-registry:/usr/local/cargo/registry
+      - casde-target:/work/target
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-/dev/null}:/tmp/.docker.xauth:ro
+      - ${XDG_RUNTIME_DIR:-/tmp}/${WAYLAND_DISPLAY:-wayland-0}:/tmp/xdg/${WAYLAND_DISPLAY:-wayland-0}
+    devices:
+      - /dev/dri
+    logging: *default-logging
+
+volumes:
+  casde-cargo-registry:
+  casde-target:
