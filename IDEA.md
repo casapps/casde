@@ -121,7 +121,36 @@ explicitly here:
   AI.md's "CLI is the universal fallback... for automation" rule.
 - **TUI**: not in scope. A desktop environment has no meaningful
   terminal-only interactive mode.
-- No client/server (IPC) split is defined yet — needs further design.
+- **Client/server (IPC) split — declared, per AI.md's "Local
+  Client/Server (IPC) Mode"**: the running CASDE session (compositor +
+  window management + panel, started at login) is the long-lived
+  **server**; the settings UI and `casdectl` are thin **clients** that
+  connect to it. This is the tmux-style split AI.md describes, not a
+  PART 14 network daemon — no TCP listener, ever.
+  - **Main socket**: the CASDE session is always the main server,
+    listening on `$XDG_RUNTIME_DIR/casde/casde.sock` (`0700` dir,
+    `0600` socket). One CASDE session runs per logged-in user, so no
+    named-server registry is needed for v1 — the main-socket-only case
+    already covers the product.
+  - **Session state awareness (declared)**: the server tracks live
+    per-monitor state — active workspace/tag set per monitor, window
+    list with geometry/workspace-membership/focus state — so
+    `casdectl` and the settings UI can query and act on the running
+    session (e.g. `casdectl workspace switch dev`, `casdectl window
+    list`) instead of only editing static config.
+  - **Save/restore (declared)**: workspace layout and per-window
+    workspace-assignment are saved to the per-user state dir and
+    restored on the next CASDE session start, extending the existing
+    Autostart section's wallpaper-restore behavior to the full
+    workspace/window layout. Restore never re-launches previously
+    running programs by default (matches AI.md's opt-in restore-exec
+    rule) — it recreates workspace/window *placement* state only; an
+    explicit user opt-in would be needed to also relaunch programs,
+    and that opt-in isn't enabled by default.
+  - **Trust boundary**: the IPC socket trusts same-UID local processes
+    only (filesystem `0700`/`0600` permissions plus `SO_PEERCRED`/
+    `getpeereid` peer-credential verification) — also recorded under
+    Trust boundaries & security exceptions below.
 
 ### Display backends
 - Native Wayland compositor (not an XWayland compatibility shim) — full
@@ -428,6 +457,17 @@ this includes:
   behavior without depending on the GNOME Keyring package itself.
 
 ### Trust boundaries & security exceptions
+- **IPC socket boundary**: the client/server IPC socket (see App
+  surfaces → Client/server split) trusts same-UID local processes
+  only — access control is filesystem `0700`/`0600` permissions on
+  `$XDG_RUNTIME_DIR/casde/`, with `SO_PEERCRED`/`getpeereid`
+  peer-credential checks as defense-in-depth. Abuse case: another local
+  user, or a different process running as the same user without
+  legitimate reason, connects to the socket to query/control the
+  session — refused by permission and peer-credential checks in the
+  first case; in the same-user case, the socket is same-UID by design
+  (matching AI.md's stated trust model), so any process running as that
+  user is trusted to the same degree the user's own shell already is.
 - **Deliberate exception, reconciled with portal compat**: the portal
   *interfaces* (Screenshot, Clipboard, ScreenCast, GlobalShortcuts) are
   fully implemented (see System integration) so every app — sandboxed
@@ -547,4 +587,3 @@ this includes:
 - Phased implementation roadmap for the technology foundation (which
   backend/milestone comes first) given full Wayland/X11 effect parity
   and full multi-monitor support are both required for v1.
-- Client/server (IPC) split — not yet designed.
