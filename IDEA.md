@@ -46,21 +46,55 @@ further discussion and research before implementation begins.
 ## Business logic
 
 ### Technology foundation
-- Built fully from scratch on both backends — the Wayland compositor
-  written directly against the core Wayland protocol (no wlroots), and
-  the X11 WM written directly against Xlib/xcb (no forked/wrapped
-  existing compositor such as KWin or Mutter). Chosen deliberately for
-  maximum control over the unified feature set, at the cost of
-  dramatically more implementation work than a wlroots-based approach —
-  the user is not the implementer and has weighed that tradeoff knowingly.
-- **Honest scope flag**: a from-scratch dual-backend compositor
-  (protocol implementation, rendering, input, DRM/KMS handling) is a
-  multi-year undertaking for a solo/small effort even before any of
-  CASDE's DE-level features are built — this should be broken into a
-  realistic phased roadmap (e.g. X11 WM first since the protocol surface
-  is smaller and more stable, Wayland compositor second) rather than
-  attempted as one monolithic build. Needs a dedicated implementation
-  roadmap before coding starts.
+- **Superseded decision** — the original plan below (fully from-scratch
+  protocol implementation) is replaced: CASDE is implemented in **Rust**
+  (per AI.md's single-Rust-application rule) and builds on existing,
+  actively-maintained crates for protocol-level work wherever a suitable
+  crate exists, rather than reimplementing Wayland/X11/DRM/input
+  handling from zero. Reasoning: those protocol layers are exactly the
+  kind of "already solved, extensively hardware-tested" problem that a
+  from-scratch reimplementation would spend years re-discovering bugs
+  in; reuse gets CASDE to a real working v1 in a realistic timeframe
+  without changing what the finished DE looks or feels like to a user.
+  - **Wayland backend**: build on `smithay` (the Rust Wayland
+    compositor framework/crate ecosystem — the Rust-native equivalent
+    of `wlroots`) for protocol plumbing, DRM/KMS, input, and rendering
+    integration, with CASDE's own compositing/effects, panel, window
+    management, and policy layered on top as original code.
+  - **X11 backend**: build on `x11rb` (or `xcb`-equivalent Rust
+    bindings) for the X11 protocol layer, again with CASDE's own window
+    management/policy/panel layered on top.
+  - **Everything CASDE-specific** (window rules engine, multi-tag
+    workspaces, panel/widgets, theming/portal/keyring services,
+    settings UI, CLI) remains original code — reuse applies to the
+    protocol/hardware layer, not to CASDE's own DE behavior or feature
+    set, which stays exactly as specified elsewhere in this document.
+  - **General reuse principle**: prefer an existing, well-maintained
+    crate over hand-rolled code anywhere one genuinely fits (e.g. the
+    Secret Service D-Bus server, the notification-spec D-Bus server,
+    fontconfig/freedesktop-icon-theme parsing, image decoding for
+    wallpapers/icons) — reinvent only the parts that are CASDE's actual
+    product differentiation.
+- **Single static binary** — build mechanics (musl targets, static
+  linking, toolchain image, artifact naming) are already fully governed
+  by AI.md's "Single Static Binary" section; not restated here. The
+  IDEA.md-level decision this drives: Linux (`amd64`/`arm64`, musl) is
+  in scope by default per AI.md; BSD targets are opt-in per IDEA.md —
+  which BSD variant(s) are in scope is still open, see Open Questions.
+  Crate choices for the display layer follow AI.md's existing rule
+  (`x11rb` for X11 — pure-Rust, no link-time `libX11`; `wayland-client`/
+  `wayland-rs` with the `dlopen` feature for Wayland) so CASDE's binary
+  has no link-time C dependency for display I/O on either backend.
+- **Honest scope flag, revised**: switching to crate reuse substantially
+  reduces (it does not eliminate) the multi-year-effort risk called out
+  under the old from-scratch plan — protocol/hardware-layer bugs are
+  now largely upstream's problem, not CASDE's. What remains genuinely
+  large is still CASDE's own feature surface (window management, panel,
+  theming/portal/keyring services, settings UI) and still needs a
+  realistic phased roadmap (e.g. X11 backend first since `x11rb` and
+  the X11 protocol surface are simpler/more stable than Smithay's
+  Wayland surface) rather than building both backends to full parity
+  simultaneously as a single monolithic v1.
 
 ### Platform targets
 - Linux and BSD (not Linux-only). BSD support means avoiding
@@ -510,7 +544,7 @@ this includes:
 - Exact BSD variant(s) to target (OpenBSD only vs also FreeBSD/NetBSD)
   and the concrete BSD equivalents for `systemd-logind` session
   management and polkit privilege elevation.
-- Phased implementation roadmap for the from-scratch technology
-  foundation (which backend/milestone comes first) given full Wayland/X11
-  effect parity and full multi-monitor support are both required for v1.
+- Phased implementation roadmap for the technology foundation (which
+  backend/milestone comes first) given full Wayland/X11 effect parity
+  and full multi-monitor support are both required for v1.
 - Client/server (IPC) split — not yet designed.
